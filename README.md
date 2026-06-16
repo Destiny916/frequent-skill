@@ -1,87 +1,28 @@
-# frequent-skill
+# ccprompt-and-hooks
 
-AI Coding Agent Skills Framework - 常用技能集合
+Claude Code 提示词(skills)与 hooks 的可移植配置集,用于在多台机器间快速复用同一套
+工作流约束与自动化。
 
-## 概述
+## 目录
 
-本仓库汇集了用于 AI 编码代理的技能框架和工具，帮助开发者构建更高效、更系统的软件开发工作流。
-
-## 目录结构
-
-```
-frequent-skill/
-├── superpowers-main/          # 完整的 Superpowers 开发方法论
-│   ├── skills/                # 核心技能集合
-│   ├── tests/                 # 测试套件
-│   └── docs/                  # 文档和设计规范
-├── andrej-karpathy-skills-main/  # Karpathy 技能指南
-└── backup_skills/             # 技能备份
-```
-
-## 技能列表
-
-### Superpowers 核心技能
-
-| 技能 | 描述 |
+| 路径 | 内容 |
 |------|------|
-| **brainstorming** | 头脑风暴技能 - 用于激发创意和探索问题空间 |
-| **subagent-driven-development** | 子代理驱动开发 - 多代理协作完成复杂任务 |
-| **test-driven-development** | 测试驱动开发 - TDD 工作流 |
-| **systematic-debugging** | 系统化调试 - 结构化问题定位和修复 |
-| **writing-plans** | 计划编写 - 创建清晰可执行的实施计划 |
-| **executing-plans** | 计划执行 - 按计划推进项目 |
-| **finishing-a-development-branch** | 分支完成 - 规范合并流程 |
-| **requesting-code-review** | 请求代码审查 - 获取高质量反馈 |
-| **receiving-code-review** | 接收代码审查 - 有效处理审查意见 |
-| **dispatching-parallel-agents** | 并行代理调度 - 多任务并行处理 |
-| **verification-before-completion** | 完成前验证 - 确保交付质量 |
-| **using-git-worktrees** | Git Worktrees 使用 - 高效多分支开发 |
-| **using-superpowers** | Superpowers 使用指南 |
-| **writing-skills** | 技能编写 - 创建新的自定义技能 |
+| `building-claude-code-hooks/` | **skill**:如何创建/注册/调试 Claude Code hook(stdin/退出码/settings.json/模板)。装到 `~/.claude/skills/` 后自动可用。 |
+| `general-agent-operating-guidelines/` | **skill**:每次对话的基线操作规则(安全、拒答、语气、检索引用、工具与文件处理、子代理、记忆、环境感知)。 |
+| `hooks/` | 一套 7 项 hook 脚本 + `README.md`(逐项说明 + 脱敏的 settings.json 注册片段)。 |
+| `CLAUDE-FABLE-5.md` | 参考用的大段系统提示词文档。 |
 
-### 其他技能
+## 快速使用
 
-| 技能 | 描述 |
-|------|------|
-| **karpathy-guidelines** | Andrej Karpathy 编码指南 |
+- **装 skill**:把 `building-claude-code-hooks/`、`general-agent-operating-guidelines/`
+  整个拷到 `~/.claude/skills/` 下;在 Claude Code 里用 `Skill` 工具按名调用。
+- **装 hooks**:见 `hooks/README.md`,把脚本拷到 `~/.claude/hooks/`,并把脱敏注册片段
+  合并进你的 `~/.claude/settings.json`。
+- **每次对话自动加载基线 skill**:在 `~/.claude/CLAUDE.md` 写一条规则要求开场调用
+  `using-superpowers` + `general-agent-operating-guidelines`;并用 `SessionStart` hook
+  (`hooks/inject-bootstrap-skills.py`)做代码级强制注入。
 
-## 快速开始
+## 安全须知
 
-### 安装
-
-```bash
-# 克隆仓库
-git clone https://github.com/Destiny916/frequent-skill.git
-
-# 进入目录
-cd frequent-skill
-```
-
-### 在 Claude Code 中使用
-
-```bash
-/plugin install superpowers@claude-plugins-official
-```
-
-## 核心概念
-
-### 技能触发
-
-技能会自动检测上下文并触发，无需手动调用。当 AI 代理识别到相关场景时，会自动激活相应技能。
-
-### 开发流程
-
-1. **规划阶段** - 使用 brainstorming 和 writing-plans 明确目标和方案
-2. **执行阶段** - 使用 subagent-driven-development 驱动实现
-3. **验证阶段** - 使用 test-driven-development 和 verification-before-completion 确保质量
-4. **审查阶段** - 使用 requesting-code-review 和 receiving-code-review 持续改进
-
-## 文档
-
-更多详细文档请参考：
-- Superpowers 完整文档: superpowers-main/README.md
-- 各技能详细说明: superpowers-main/skills/
-
-## 许可证
-
-本项目遵循各技能对应的开源许可证。
+本仓库**不含任何真实密钥**。`settings.json` 注册示例中的 token 一律为占位符 `<YOU>` /
+省略。在自己的机器上套用时,真实 token 只放在本地 `~/.claude/settings.json`,**切勿提交**。
