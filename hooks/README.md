@@ -21,7 +21,7 @@ Claude Code 在生命周期的关键节点会调用外部命令(hook)。每个 h
 
 ---
 
-## 二、本套 7 个 hook 注册项一览
+## 二、本套 8 个 hook 注册项一览
 
 | # | 事件 / matcher | 脚本 | 作用 | 行为 |
 |---|----------------|------|------|------|
@@ -32,6 +32,7 @@ Claude Code 在生命周期的关键节点会调用外部命令(hook)。每个 h
 | 5 | SessionStart / `""` | `inject-bootstrap-skills.py` | 每个新会话注入两个基线 skill 全文 | 打印 additionalContext |
 | 6 | PostToolUse / `Edit\|Write` | `format-python-files.py` | 编辑后对 `.py` 跑 `black` 格式化 | 尽力而为,缺 black 则静默跳过 |
 | 7 | Stop / `""` | `notify-stop.ps1` | 回合结束弹 Windows 桌面气泡通知 | 尽力而为 |
+| 8 | UserPromptSubmit / `""` | `remind-bootstrap-skills.py` | 每轮用户提交时注入基线 skill 精简指针(~150 tokens) | 尽力而为,绝不阻断 |
 
 ### 各 hook 详解
 
@@ -70,6 +71,13 @@ JWT 等密钥;检出则按严重级别打印并 **退出 2 拦截提交**。带�
 **7. notify-stop.ps1** — `Stop`
 回合结束时用 `System.Windows.Forms.NotifyIcon` 弹一个桌面气泡通知。纯 Windows 可用,
 尽力而为。
+
+**8. remind-bootstrap-skills.py** — `UserPromptSubmit`
+SessionStart 注入(hook 5)只在**会话开头跑一次**,且已知在 `/compact` 压缩后会丢失、
+`--resume`/`--continue` 续接时可能不触发。本 hook 在**每次用户提交**时注入一条**精简指针**
+(~150 tokens,不是全文):重申两个基线 skill 生效、应用顺序、以及"全文若已不在上下文就从
+`~/.claude/skills/` 回读对应 SKILL.md"。与 hook 5 形成**全文一次 + 每轮兜底**的组合:开场有
+全文,之后每轮低成本保持在场并能扛过压缩/续接。读不到 skill 文件则静默跳过,绝不阻断提交。
 
 ---
 
@@ -130,6 +138,14 @@ JWT 等密钥;检出则按严重级别打印并 **退出 2 拦截提交**。带�
         "matcher": "",
         "hooks": [
           { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\<YOU>\\.claude\\hooks\\notify-stop.ps1\"" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          { "type": "command", "command": "python \"C:\\Users\\<YOU>\\.claude\\hooks\\remind-bootstrap-skills.py\"" }
         ]
       }
     ]

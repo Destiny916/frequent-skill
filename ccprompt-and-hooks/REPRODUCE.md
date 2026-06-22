@@ -1,7 +1,7 @@
 # 在新机器上复现这套 Claude Code 配置
 
 本指南说明如何在另一台机器上,从零复现本仓库 `ccprompt-and-hooks/` 提供的整套配置:
-**2 个开场 bootstrap skill + 全局每次对话规则 + 7 个生命周期 hook**。
+**2 个开场 bootstrap skill + 全局每次对话规则 + 8 个生命周期 hook**。
 
 适用平台:Windows(主),文末附 macOS/Linux 差异。前置:已安装 Claude Code、Python 3、git。
 
@@ -134,6 +134,10 @@ Invoke `using-superpowers` first, then `general-agent-operating-guidelines`.
     "Stop": [
       { "matcher": "", "hooks": [
         { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\<YOU>\\.claude\\hooks\\notify-stop.ps1\"" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [
+        { "type": "command", "command": "python \"C:\\Users\\<YOU>\\.claude\\hooks\\remind-bootstrap-skills.py\"" } ] }
     ]
   }
 }
@@ -142,11 +146,17 @@ Invoke `using-superpowers` first, then `general-agent-operating-guidelines`.
 `SessionStart` hook(`inject-bootstrap-skills.py`)是**代码级强制**:每个新会话启动时把两个
 skill 全文注入上下文,不依赖 agent 是否主动调用。它与第 4 节的软规则形成**双保险**。
 
+`UserPromptSubmit` hook(`remind-bootstrap-skills.py`)是**每轮兜底**:SessionStart 只在会话
+开头注一次全文,且 `/compact` 压缩后会丢、`--resume` 续接可能不触发。本 hook 在**每次提交**注入
+一条 ~150 token 精简指针(重申规则 + skill 名 + "全文丢了就从 `~/.claude/skills/` 回读"),
+成本低且能扛过压缩/续接。组合效果:**开场全文一次 + 之后每轮指针在场**。
+
 ---
 
 ## 6. macOS/Linux 差异
 
-- 所有 `python "C:\\...\\x.py"` 改为 `python3 "$HOME/.claude/hooks/x.py"`。
+- 所有 `python "C:\\...\\x.py"` 改为 `python3 "$HOME/.claude/hooks/x.py"`(含
+  `remind-bootstrap-skills.py`,§3 的 `cp ccprompt-and-hooks/hooks/*.py` 会自动带上它)。
 - `notify-stop.ps1`(Stop 通知)无法直接用;换等价命令:
   - mac:`{ "type": "command", "command": "osascript -e 'display notification \"Response complete\" with title \"Claude Code\"'" }`
   - Linux:`{ "type": "command", "command": "notify-send 'Claude Code' 'Response complete'" }`
@@ -186,5 +196,6 @@ python -c "import json;json.load(open(r'C:/Users/<YOU>/.claude/settings.json'));
 
 ```powershell
 # 关闭 SessionStart 注入:删 settings.json 里的 SessionStart 段
+# 关闭每轮指针注入:删 settings.json 里的 UserPromptSubmit 段
 # 卸载全部:删 ~/.claude/hooks/ 下脚本 + settings.json 的 hooks 段 + CLAUDE.md 的 Baseline skills 段
 ```

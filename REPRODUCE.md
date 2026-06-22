@@ -1,7 +1,7 @@
 # 在新机器上复现这套 Claude Code 配置
 
 本指南说明如何在另一台机器上,从零复现本仓库提供的整套配置:
-**2 个开场 bootstrap skill + 全局每次对话规则 + 7 个生命周期 hook**。
+**2 个开场 bootstrap skill + 全局每次对话规则 + 8 个生命周期 hook**。
 
 适用平台:Windows(主),文末附 macOS/Linux 差异。前置:已安装 Claude Code、Python 3、git。
 
@@ -10,7 +10,7 @@
 > - `general-agent-operating-guidelines/` — 基线操作规则 skill
 > - `superpowers-main/` — superpowers 套件(含 `using-superpowers` 等)
 > - `andrej-karpathy-skills-main/`、`backup_skills/` — 其它 skill 备份
-> - `hooks/` — 7 个 hook 脚本 + 说明
+> - `hooks/` — 8 个 hook 脚本 + 说明
 > - `CLAUDE-FABLE-5.md` — 参考用系统提示词文档
 
 ---
@@ -147,6 +147,10 @@ Invoke `using-superpowers` first, then `general-agent-operating-guidelines`.
     "Stop": [
       { "matcher": "", "hooks": [
         { "type": "command", "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\<YOU>\\.claude\\hooks\\notify-stop.ps1\"" } ] }
+    ],
+    "UserPromptSubmit": [
+      { "matcher": "", "hooks": [
+        { "type": "command", "command": "python \"C:\\Users\\<YOU>\\.claude\\hooks\\remind-bootstrap-skills.py\"" } ] }
     ]
   }
 }
@@ -155,7 +159,12 @@ Invoke `using-superpowers` first, then `general-agent-operating-guidelines`.
 `SessionStart` hook(`inject-bootstrap-skills.py`)是**代码级强制**:每个新会话启动时把两个
 skill 全文注入上下文,不依赖 agent 是否主动调用。它与第 4 节的软规则形成**双保险**。
 
-### 7 个 hook 速查
+`UserPromptSubmit` hook(`remind-bootstrap-skills.py`)是**每轮兜底**:SessionStart 只在会话
+开头注一次全文,且 `/compact` 压缩后会丢、`--resume` 续接可能不触发。本 hook 在**每次提交**注入
+一条 ~150 token 的精简指针(重申规则 + skill 名 + "全文丢了就从 `~/.claude/skills/` 回读"),
+成本低且能扛过压缩/续接。组合效果:**开场全文一次 + 之后每轮指针在场**。
+
+### 8 个 hook 速查
 
 | # | 事件 / matcher | 脚本 | 作用 |
 |---|----------------|------|------|
@@ -163,9 +172,10 @@ skill 全文注入上下文,不依赖 agent 是否主动调用。它与第 4 节
 | 2 | PreToolUse / `Bash` | `dangerous-command-blocker.py` | 三级拦截危险命令 |
 | 3 | PreToolUse / `Bash` | `secret-scanner.py` | commit 前扫描密钥 |
 | 4 | PreToolUse / `Write`(`if`) | (内联 echo) | 禁止写 `.env*` |
-| 5 | SessionStart / `""` | `inject-bootstrap-skills.py` | 注入两个基线 skill |
+| 5 | SessionStart / `""` | `inject-bootstrap-skills.py` | 注入两个基线 skill 全文 |
 | 6 | PostToolUse / `Edit\|Write` | `format-python-files.py` | `.py` 跑 black |
 | 7 | Stop / `""` | `notify-stop.ps1` | 桌面通知 |
+| 8 | UserPromptSubmit / `""` | `remind-bootstrap-skills.py` | 每轮注入基线 skill 精简指针 |
 
 各 hook 详细说明见 `hooks/README.md`。
 
@@ -173,7 +183,9 @@ skill 全文注入上下文,不依赖 agent 是否主动调用。它与第 4 节
 
 ## 6. macOS/Linux 差异
 
-- 所有 `python "C:\\...\\x.py"` 改为 `python3 "$HOME/.claude/hooks/x.py"`。
+- 所有 `python "C:\\...\\x.py"` 改为 `python3 "$HOME/.claude/hooks/x.py"`(含
+  `remind-bootstrap-skills.py`)。`remind-bootstrap-skills.py` 跨平台通用,§3 的
+  `cp hooks/*.py` 会自动带上它。
 - `notify-stop.ps1`(Stop 通知)无法直接用;换等价命令:
   - mac:`osascript -e 'display notification "Response complete" with title "Claude Code"'`
   - Linux:`notify-send 'Claude Code' 'Response complete'`
@@ -212,5 +224,6 @@ python -c "import json;json.load(open(r'C:/Users/<YOU>/.claude/settings.json'));
 ## 9. 回滚
 
 - 关闭 SessionStart 注入:删 `settings.json` 里的 `SessionStart` 段。
+- 关闭每轮指针注入:删 `settings.json` 里的 `UserPromptSubmit` 段。
 - 完全卸载:删 `~/.claude/hooks/` 下脚本 + `settings.json` 的 `hooks` 段 + `CLAUDE.md` 的
   `Baseline skills` 段。

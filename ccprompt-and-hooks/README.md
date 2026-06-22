@@ -9,7 +9,7 @@ Claude Code 提示词(skills)与 hooks 的可移植配置集,用于在多台机�
 |------|------|
 | `building-claude-code-hooks/` | **skill**:如何创建/注册/调试 Claude Code hook(stdin/退出码/settings.json/模板)。装到 `~/.claude/skills/` 后自动可用。 |
 | `general-agent-operating-guidelines/` | **skill**:每次对话的基线操作规则(安全、拒答、语气、检索引用、工具与文件处理、子代理、记忆、环境感知)。 |
-| `hooks/` | 一套 7 项 hook 脚本 + `README.md`(逐项说明 + 脱敏的 settings.json 注册片段)。 |
+| `hooks/` | 一套 8 项 hook 脚本 + `README.md`(逐项说明 + 脱敏的 settings.json 注册片段)。 |
 | `CLAUDE-FABLE-5.md` | 参考用的大段系统提示词文档。 |
 
 ## 快速使用
@@ -20,7 +20,9 @@ Claude Code 提示词(skills)与 hooks 的可移植配置集,用于在多台机�
   合并进你的 `~/.claude/settings.json`。
 - **每次对话自动加载基线 skill**:在 `~/.claude/CLAUDE.md` 写一条规则要求开场调用
   `using-superpowers` + `general-agent-operating-guidelines`;并用 `SessionStart` hook
-  (`hooks/inject-bootstrap-skills.py`)做代码级强制注入。
+  (`hooks/inject-bootstrap-skills.py`)做代码级强制注入。再加 `UserPromptSubmit` hook
+  (`hooks/remind-bootstrap-skills.py`)每轮注入精简指针兜底,扛过 `/compact` 压缩与
+  `--resume` 续接。
 
 ## 安全须知
 

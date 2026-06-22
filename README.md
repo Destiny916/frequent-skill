@@ -12,7 +12,7 @@ Claude Code 提示词(skills)与 hooks 的可移植配置集,用于在多台机�
 | `planning-with-files/` | **skill**:文件化持久规划(`task_plan.md`/`findings.md`/`progress.md` 落盘),`/clear` 或上下文丢失后可恢复。来源 [OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files)。 |
 | `planning-with-files-zh/` | **skill**:`planning-with-files` 的中文版。 |
 | `caveman/` | **skill**:极简输出模式,砍 ~75% token 同时保留技术准确性。支持 `lite/full/ultra` 及文言文档。来源 [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman)。 |
-| `hooks/` | 一套 7 项 hook 脚本 + `README.md`(逐项说明 + 脱敏的 settings.json 注册片段)。 |
+| `hooks/` | 一套 8 项 hook 脚本 + `README.md`(逐项说明 + 脱敏的 settings.json 注册片段)。 |
 | `CLAUDE-FABLE-5.md` | 参考用的大段系统提示词文档。 |
 
 ## 快速使用
@@ -23,7 +23,9 @@ Claude Code 提示词(skills)与 hooks 的可移植配置集,用于在多台机�
   合并进你的 `~/.claude/settings.json`。
 - **每次对话自动加载基线 skill**:在 `~/.claude/CLAUDE.md` 写一条规则要求开场调用
   `using-superpowers` + `general-agent-operating-guidelines`;并用 `SessionStart` hook
-  (`hooks/inject-bootstrap-skills.py`)做代码级强制注入。
+  (`hooks/inject-bootstrap-skills.py`)做代码级强制注入。再加 `UserPromptSubmit` hook
+  (`hooks/remind-bootstrap-skills.py`)每轮注入精简指针兜底,扛过 `/compact` 压缩与
+  `--resume` 续接。
 
 ## 安全须知
 
